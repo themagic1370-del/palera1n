@@ -62,5 +62,9 @@ void setup_hooks_x86_64(void *stream)
     patch(t8012_patch_base, t8012_bin, t8012_bin_len);
 
     assert(vm_protect(mach_task_self(), page, 0x1000, false, VM_PROT_READ | VM_PROT_EXECUTE) == 0);
+
+    sys_icache_invalidate((void*)page, 0x1000);
+
+    dprintf("patched checkra1n\n");
 }
 #endif
