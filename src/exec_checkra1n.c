@@ -100,16 +100,23 @@ int exec_checkra1n(void) {
 			return -1;
 		}
 	}
-#if defined(__APPLE__) && defined(__arm64__) && (TARGET_OS_IPHONE || defined(FORCE_HELPER))
+#if defined(__APPLE__)
+	char resolved_c1_path[PATH_MAX], *resolved;
+	resolved = realpath(checkra1n_path, resolved_c1_path);
+
+	if (!resolved) {
+		LOG(LOG_FATAL, "Cannot resolve checkra1n path %s: %d (%s)", checkra1n_path, errno, strerror(errno));
+		if (ext_checkra1n == NULL) {
+			unlink(checkra1n_path);
+			free(checkra1n_path);
+		}
+		checkra1n_path = NULL;
+		return -1;
+	}
+
 	char* libcheckra1nhelper_dylib_path = NULL;
-	{
-		struct utsname name;
-		uname(&name);
-		unsigned long darwinMajor = strtoul(name.release, NULL, 10);
-		assert(darwinMajor != 0);
-#if !defined(FORCE_HELPER)
-		if (darwinMajor < 20) {
-#endif
+	if (ext_checkra1n == NULL || gOverrideLibcheckra1nHelper) {
+		setenv("LIBCHECKRA1NHELPER_CHECKRA1N_PATH", resolved_c1_path, 1);
 		if (gOverrideLibcheckra1nHelper) {
 			libcheckra1nhelper_dylib_path = gOverrideLibcheckra1nHelper;
 			goto setenv_ra1n;
@@ -141,9 +148,6 @@ int exec_checkra1n(void) {
 			}
 setenv_ra1n:
 			setenv("DYLD_INSERT_LIBRARIES", libcheckra1nhelper_dylib_path, 1);
-#if !defined(FORCE_HELPER)
-		}
-#endif
 	}
 #endif
 	char args[0x10] = "-E";
@@ -193,7 +197,7 @@ setenv_ra1n:
 	}
 	if (pongo_path != NULL) free(pongo_path);
 	pongo_path = NULL;
-#if defined(__APPLE__) && defined(__arm64__) && (TARGET_OS_IPHONE || defined(FORCE_HELPER))
+#if defined(__APPLE__)
 	if (libcheckra1nhelper_dylib_path != NULL) {
 		if (!gOverrideLibcheckra1nHelper) unlink(libcheckra1nhelper_dylib_path);
 		unsetenv("DYLD_INSERT_LIBRARIES");

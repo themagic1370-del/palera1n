@@ -4,6 +4,8 @@ OBJDIR = obj
 GENDIR = gen
 RESOURCES_DIR = resources
 
+export RESOURCES_DIR OBJDIR GENDIR
+
 C_SRC = $(wildcard *.c)
 OBJS = $(patsubst %,$(OBJDIR)/%,$(C_SRC:.c=.c.o))
 
@@ -23,12 +25,8 @@ ifeq ($(DFUHELPER_AUTO_ONLY),1)
 CFLAGS += -DDFUHELPER_AUTO_ONLY
 endif
 
-ifeq ($(FORCE_HELPER),1)
-ifneq ($(NO_EMBED_HELPER),1)
+ifeq ($(TARGET_OS),Darwin)
 C_SRC += $(GENDIR)/gen-libcheckra1nhelper.dylib.c
-endif
-CFLAGS += -DFORCE_HELPER
-BUILD_OPTIONS += FORCE_HELPER
 endif
 
 ifneq ($(NO_RAMDISK),1)
@@ -149,7 +147,6 @@ $(GENDIR)/gen-%.c: $(RESOURCES_DIR)/%
 	echo '#include <stdint.h>' > $(RESOURCES_DIR)/../$@
 	cd $(RESOURCES_DIR) && xxd -iC $$(echo $< | cut -d/ -f2) | sed -e 's/unsigned int/uint32_t/' -e 's/unsigned char/uint8_t/' >> ../$@
 
-
 $(OBJDIR)/pongo_helper.c.o: pongo_helper.c $(wildcard ../include/*.h) $(RESOURCES_DIR)/ramdisk.dmg $(RESOURCES_DIR)/checkra1n-kpf-pongo
 	$(CC) -c -o $@ $(CFLAGS) -DRAMDISK_UNCOMPRESSED_SIZE="\"$$(wc -c < $(RESOURCES_DIR)/ramdisk.dmg | tr -d ' ')\"" -DKPF_UNCOMPRESSED_SIZE="\"$$(wc -c < $(RESOURCES_DIR)/checkra1n-kpf-pongo | tr -d ' ')\"" $<
 
@@ -167,8 +164,8 @@ ifneq (,$(findstring version-min=, $(CFLAGS)))
 endif
 endif
 
-$(RESOURCES_DIR)/libcheckra1nhelper.dylib: chkstk.S
-	$(CC) $(CFLAGS) $(LDFLAGS) -shared chkstk.S -o $@
+$(RESOURCES_DIR)/libcheckra1nhelper.dylib:
+	$(MAKE) -C helper
 
 $(RESOURCES_DIR)/checkra1n-kpf-pongo:
 	curl -Lfo $@ https://cdn.nickchan.lol/palera1n/artifacts/kpf/iOS15/checkra1n-kpf-pongo
@@ -189,9 +186,9 @@ $(RESOURCES_DIR)/Pongo.bin:
 	curl -Lfo $@ https://cdn.nickchan.lol/palera1n/artifacts/kpf/iOS15/Pongo.bin
 
 clean:
-	rm -rf $(OBJDIR)/*.o $(GENDIR)/*.c $(GENDIR)/*.o palera1n palera1n.dSYM libcheckra1nhelper.dylib
+	rm -rf $(OBJDIR)/*.o $(GENDIR)/*.c $(GENDIR)/*.o palera1n palera1n.dSYM $(RESOURCES_DIR)/libcheckra1nhelper.dylib
 
 distclean: clean
 	rm -rf $(RESOURCES_DIR)/*
 
-.PHONY: all clean
+.PHONY: all clean $(RESOURCES_DIR)/libcheckra1nhelper.dylib
