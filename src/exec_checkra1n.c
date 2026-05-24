@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/ptrace.h>
 #include <inttypes.h>
 #include <sys/utsname.h>
 
