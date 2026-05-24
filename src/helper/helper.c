@@ -12,6 +12,7 @@
 
 #include "phookra1n.h"
 
+extern char **environ;
 extern char ***_NSGetArgv(void);
 extern int *_NSGetArgc(void);
 
@@ -26,7 +27,7 @@ __attribute__((constructor)) void ctor(void)
     int argc = *argcp;
     char **argv = *argvp;
 
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
     if (argc == 2 && strcmp(argv[1], "__CHECKRA1N_JIT_PLEASE__") == 0) {
         assert(ptrace(PT_TRACE_ME, 0, 0, 0) == 0);
         exit(0);
@@ -35,7 +36,7 @@ __attribute__((constructor)) void ctor(void)
         uint32_t exe_path_size = PATH_MAX;
         assert(_NSGetExecutablePath(exe_path, &exe_path_size) == 0);
         pid_t pid;
-        assert(posix_spawnp(&pid, exe_path, NULL, NULL, (char*[]){"__CHECKRA1N_JIT_PLEASE__",NULL}, NULL) == 0);
+        assert(posix_spawnp(&pid, exe_path, NULL, NULL, (char*[]){"__CHECKRA1N_JIT_PLEASE__",NULL}, environ) == 0);
         assert(waitpid(pid, NULL, 0) == pid);
     }
 #endif

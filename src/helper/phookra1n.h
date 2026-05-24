@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define dprintf(...) // printf(__VA_ARGS__)
+#define dprintf(...) printf(__VA_ARGS__)
 
 extern uint8_t t7000_bin[];
 extern uint32_t t7000_bin_len;
