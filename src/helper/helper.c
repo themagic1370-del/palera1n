@@ -6,6 +6,7 @@
 #include <mach-o/dyld.h>
 #include <sys/ptrace.h>
 #include <spawn.h>
+#include <unistd.h>
 #include <string.h>
 #include <limits.h>
 #include <TargetConditionals.h>
@@ -15,6 +16,11 @@
 extern char **environ;
 extern char ***_NSGetArgv(void);
 extern int *_NSGetArgc(void);
+
+#define	CS_OPS_STATUS		0
+#define CS_DEBUGGED 0x10000000
+
+int csops(pid_t pid, unsigned int ops, void *useraddr, size_t usersize);
 
 __attribute__((constructor)) void ctor(void)
 {
@@ -28,17 +34,12 @@ __attribute__((constructor)) void ctor(void)
     char **argv = *argvp;
 
 #if TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
-    if (argc == 2 && strcmp(argv[1], "__CHECKRA1N_JIT_PLEASE__") == 0) {
-        assert(ptrace(PT_TRACE_ME, 0, 0, 0) == 0);
-        exit(0);
-    } else {
-        char exe_path[PATH_MAX];
-        uint32_t exe_path_size = PATH_MAX;
-        assert(_NSGetExecutablePath(exe_path, &exe_path_size) == 0);
-        pid_t pid;
-        assert(posix_spawnp(&pid, exe_path, NULL, NULL, (char*[]){"__CHECKRA1N_JIT_PLEASE__",NULL}, environ) == 0);
-        assert(waitpid(pid, NULL, 0) == pid);
-    }
+    assert(ptrace(PT_TRACE_ME, 0, 0, 0) == 0);
+    uint32_t csflags;
+    assert(csops(getpid(), CS_OPS_STATUS, &csflags, sizeof(csflags)) == 0);
+
+    if (!(csflags & CS_DEBUGGED))
+        printf("WARNING: CS_DEBUGGED is not set (0x%x)\n", csflags);
 #endif
 
     char *c1_path = getenv("LIBCHECKRA1NHELPER_CHECKRA1N_PATH");

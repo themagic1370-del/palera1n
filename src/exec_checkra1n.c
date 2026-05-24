@@ -185,6 +185,15 @@ setenv_ra1n:
 		return -1;
 	}
 	LOG(LOG_VERBOSE2, "%s spawned successfully", checkra1n_path);
+#if defined(__APPLE__)
+#if TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
+    waitpid(pid, NULL, WUNTRACED);
+    ret = ptrace(PT_DETACH, pid, NULL, 0);
+
+	if (ret)
+		LOG(LOG_WARNING, "Cannot ptrace(PT_DETACH): %d (%s)", errno, strerror(errno));
+#endif
+#endif
 	sleep(2);
 	if (ext_checkra1n == NULL) {
 		unlink(checkra1n_path);
@@ -192,7 +201,7 @@ setenv_ra1n:
 		checkra1n_path = NULL;
 	}
 	waitpid(pid, NULL, 0);
-		if (!external_pongo && pongo_path != NULL) {
+	if (!external_pongo && pongo_path != NULL) {
 		unlink(pongo_path);
 	}
 	if (pongo_path != NULL) free(pongo_path);
