@@ -18,6 +18,8 @@ all: ../$(RESOURCES_DIR)/libcheckra1nhelper.dylib
 
 ../$(RESOURCES_DIR)/libcheckra1nhelper.dylib: $(C_OBJS) $(S_OBJS) $(wildcard *.h)
 	$(CC) $(CFLAGS) $(LDFLAGS) -shared $(C_OBJS) $(S_OBJS) -o $@
+	$(STRIP) -x $@
+	codesign -fs - $@
 
 ../$(GENDIR)/gen-payload-%.c: payloads/%.bin
 	echo '#include <stdint.h>' > $@
