@@ -9,14 +9,6 @@ export RESOURCES_DIR OBJDIR GENDIR
 C_SRC = $(wildcard *.c)
 OBJS = $(patsubst %,$(OBJDIR)/%,$(C_SRC:.c=.c.o))
 
-ifeq (,$(findstring macosx, $(CFLAGS)))
-ifneq (,$(findstring version-min=, $(CFLAGS)))
-ifneq ($(NO_EMBED_HELPER),1)
-C_SRC += $(GENDIR)/gen-libcheckra1nhelper.dylib.c
-endif
-endif
-endif
-
 ifeq ($(NO_EMBED_HELPER),1)
 CFLAGS += -DNO_EMBED_HELPER
 endif
