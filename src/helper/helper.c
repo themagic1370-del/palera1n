@@ -77,7 +77,10 @@ __attribute__((constructor)) void ctor(void)
 
     assert(__TEXT);
 
-#if defined(__arm64__)
+#if defined(__x86_64__)
+    assert(__TEXT->vmsize == 0x28000);
+    setup_hooks_x86_64((void*)(__TEXT->vmaddr + slide));
+#elif defined(__arm64__)
     assert(__TEXT->vmsize == 0x24000);
     setup_hooks_arm64((void*)(__TEXT->vmaddr + slide));
 #endif

@@ -15,6 +15,10 @@ extern uint32_t t8011_bin_len;
 extern uint8_t t8012_bin[];
 extern uint32_t t8012_bin_len;
 
+#if defined(__x86_64__)
+void setup_hooks_x86_64(void *stream);
+#elif defined(__arm64__)
 void setup_hooks_arm64(void *stream);
+#endif
 
 #endif
