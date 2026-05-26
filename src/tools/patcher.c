@@ -262,7 +262,7 @@ int parse_checkra1n32(void *c1) {
   Elf32_Shdr *sections = (Elf32_Shdr *)((uint8_t *)c1 + hdr->e_shoff);
   char *strings = (char *)c1 + sections[hdr->e_shstrndx].sh_offset;
 
-  Elf32_Half text_idx, kpf_idx;
+  Elf32_Half text_idx = 0, kpf_idx = 0;
 
   for (Elf32_Half i = 0; i < hdr->e_shnum; i++) {
     if (strcmp(&strings[sections[i].sh_name], ".text") == 0)
