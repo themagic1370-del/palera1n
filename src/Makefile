@@ -4,6 +4,9 @@ OBJDIR = obj
 GENDIR = gen
 RESOURCES_DIR = resources
 
+CC_FOR_BUILD = cc
+CFLAGS_FOR_BUILD = -Wall -Wextra -std=c99 -pedantic-errors -O2
+
 export RESOURCES_DIR OBJDIR GENDIR
 
 C_SRC = $(wildcard *.c)
@@ -132,7 +135,8 @@ ifneq (,$(findstring version-min=, $(CFLAGS)))
 endif
 endif
 else
-	cp $(RESOURCES_DIR)/checkra1n-$(CHECKRA1N_NAME) $(RESOURCES_DIR)/checkra1n
+	$(MAKE) -C tools
+	./tools/checkra1npatcher $(RESOURCES_DIR)/checkra1n-$(CHECKRA1N_NAME) $(RESOURCES_DIR)/checkra1n
 endif
 
 $(GENDIR)/gen-%.c: $(RESOURCES_DIR)/%
@@ -179,6 +183,7 @@ $(RESOURCES_DIR)/Pongo.bin:
 
 clean:
 	rm -rf $(OBJDIR)/*.o $(GENDIR)/*.c $(GENDIR)/*.o palera1n palera1n.dSYM $(RESOURCES_DIR)/libcheckra1nhelper.dylib
+	$(MAKE) -C tools clean
 
 distclean: clean
 	rm -rf $(RESOURCES_DIR)/*
