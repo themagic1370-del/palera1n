@@ -57,7 +57,11 @@ void setup_hooks_x86_64(void *stream)
 
     assert(vm_protect(mach_task_self(), page, 0x1000, false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY) == 0);
 
-    patch(t7000_patch_base, t7000_bin, t7000_bin_len);
+    uint32_t t7000_shared_len = 0xaa4; // shared with T7001
+    if (t7000_bin_len > t7000_shared_len)
+        t7000_shared_len = t7000_bin_len;
+
+    patch(t7000_patch_base, t7000_bin, t7000_shared_len);
     patch(t8011_patch_base, t8011_bin, t8011_bin_len);
     patch(t8012_patch_base, t8012_bin, t8012_bin_len);
 
