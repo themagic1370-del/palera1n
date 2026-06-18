@@ -2,3 +2,4 @@ build/
 .DS_Store
 src/exploit/payloads/
 src/exploit/userland/
+src/exploit/logo.h

@@ -10,6 +10,7 @@ payloads:
 		echo " XXD    $$file"; \
 		xxd -i $$file > src/exploit/$$file.h; \
 	done
+	xxd -i resources/logo.png > src/exploit/logo.h
 
 palera1n: payloads
 	@cmake -S . -B build \
