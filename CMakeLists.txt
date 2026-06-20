@@ -133,9 +133,6 @@ if(WITH_GUI)
             C_INCLUDE_PATH=${DEPS_PREFIX}/include
             CPLUS_INCLUDE_PATH=${DEPS_PREFIX}/include
 
-            libcurl_CFLAGS=-I/Applications/Xcode-26.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/usr/include
-            libcurl_LIBS=-lcurl
-
             mbedtls_INCLUDES=${DEPS_PREFIX}/include
             mbedtls_LIBDIR=${DEPS_PREFIX}/lib
             mbedtls_LIBS=-lmbedtls\ -lmbedx509\ -lmbedcrypto
@@ -149,7 +146,7 @@ if(WITH_GUI)
             GIT_TAG mbedtls-3.5.2
             UPDATE_COMMAND ""
 
-            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/0001-Allow-empty-x509-cert-issuer.patch
+            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch
 
             CMAKE_ARGS
                 -DCMAKE_INSTALL_PREFIX=${DEPS_PREFIX}
@@ -159,6 +156,27 @@ if(WITH_GUI)
 
             INSTALL_DIR ${DEPS_PREFIX}
         )
+
+        if(LINUX)
+            # =========================
+            # libusb
+            # =========================
+            ExternalProject_Add(libusb_ep
+                GIT_REPOSITORY https://github.com/libusb/libusb.git
+                GIT_TAG v1.0.27
+                UPDATE_COMMAND ""
+
+                CONFIGURE_COMMAND
+                    ${PKG_ENV}
+                    ./autogen.sh
+                    --prefix=${DEPS_PREFIX}
+                    --disable-udev
+
+                BUILD_COMMAND make -j
+                INSTALL_COMMAND make install
+                BUILD_IN_SOURCE 1
+            )
+        endif()
 
         # =========================
         # libplist
@@ -216,34 +234,13 @@ if(WITH_GUI)
                 --prefix=${DEPS_PREFIX}
                 --enable-static
                 --disable-shared
+                --without-systemd
 
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
             BUILD_IN_SOURCE 1
 
             DEPENDS libplist_ep limd_glue_ep
-        )
-
-        # =========================
-        # libtatsu
-        # =========================
-        ExternalProject_Add(libtatsu_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libtatsu.git
-            GIT_SHALLOW 1
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                --enable-static
-                --disable-shared
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-
-            DEPENDS libplist_ep
         )
 
         # =========================
@@ -261,12 +258,25 @@ if(WITH_GUI)
                 --with-mbedtls
                 --enable-static
                 --disable-shared
+                --disable-wireless-pairing
 
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
             BUILD_IN_SOURCE 1
 
-            DEPENDS mbedtls_ep libplist_ep libusbmuxd_ep limd_glue_ep libtatsu_ep
+            DEPENDS mbedtls_ep libplist_ep libusbmuxd_ep limd_glue_ep libusb_ep
+        )
+
+        file(WRITE
+            ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
+        "
+        file(WRITE \"${CMAKE_BINARY_DIR}/libimobiledevice_ep-prefix/src/libimobiledevice_ep/tools/Makefile\" \"all:\\ninstall:\\n\")
+        ")
+
+        ExternalProject_Add_Step(libimobiledevice_ep fix_tools_makefile
+            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
+            DEPENDEES configure
+            DEPENDERS build
         )
 
         # =========================
@@ -288,7 +298,7 @@ if(WITH_GUI)
             INSTALL_COMMAND make install
             BUILD_IN_SOURCE 1
 
-            DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep libtatsu_ep
+            DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep
         )
 
         set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
@@ -315,18 +325,17 @@ if(WITH_GUI)
             ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
             ${DEPS_PREFIX}/lib/libplist-2.0.a
             ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
-            ${DEPS_PREFIX}/lib/libtatsu.a
-        )
-
-        target_link_libraries(palera1n PRIVATE
             ${DEPS_PREFIX}/lib/libmbedtls.a
             ${DEPS_PREFIX}/lib/libmbedx509.a
             ${DEPS_PREFIX}/lib/libmbedcrypto.a
         )
 
-        target_link_libraries(palera1n PRIVATE
-            curl
-        )
+        if(LINUX)
+            target_link_libraries(palera1n PRIVATE
+                ${DEPS_PREFIX}/lib/libusb-1.0.a
+            )
+        endif()
+
     else()
         find_package(PkgConfig REQUIRED)
 
