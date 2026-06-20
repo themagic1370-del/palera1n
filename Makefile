@@ -5,6 +5,7 @@ WITH_STATIC ?= 0
 BUILD_TYPE ?= Debug
 
 payloads:
+	mkdir -p src/gen/images
 	@for file in images/*; do \
 		name=$$(basename "$$file"); \
 		name=$${name%.*}; \
