@@ -246,6 +246,18 @@ if(WITH_GUI)
         # =========================
         # libimobiledevice
         # =========================
+
+        set(LIBIMOBILEDEVICE_DEPS
+            mbedtls_ep
+            libplist_ep
+            libusbmuxd_ep
+            limd_glue_ep
+        )
+
+        if(LINUX)
+            list(APPEND LIBIMOBILEDEVICE_DEPS libusb_ep)
+        endif()
+
         ExternalProject_Add(libimobiledevice_ep
             GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice.git
             GIT_TAG ed0d66d0341562731bb19928dfe48155509fa7a7
@@ -264,7 +276,7 @@ if(WITH_GUI)
             INSTALL_COMMAND make install
             BUILD_IN_SOURCE 1
 
-            DEPENDS mbedtls_ep libplist_ep libusbmuxd_ep limd_glue_ep libusb_ep
+            DEPENDS ${LIBIMOBILEDEVICE_DEPS}
         )
 
         file(WRITE
