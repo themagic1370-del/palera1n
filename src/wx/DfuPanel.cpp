@@ -28,12 +28,6 @@
 
 #include <libirecovery.h>
 
-static const wxColour kActive =
-    wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
-
-static const wxColour kInactive =
-    wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
-
 DfuPanel::DfuPanel(MainFrame* frame, wxWindow* parent)
     : DevicePanel(frame, parent)
 {
@@ -135,6 +129,12 @@ void DfuPanel::SetDeviceState(const DeviceState& state)
 
 void DfuPanel::LoadDevice(const std::string& productType)
 {
+    const wxColour kActive =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+
+    const wxColour kInactive =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
+
     m_sequence = ParseSequence(productType);
     m_index = 0;
 
@@ -283,6 +283,12 @@ void DfuPanel::RunStep()
 {
     if (m_sequence.steps.empty())
         return;
+
+    const wxColour kActive =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+
+    const wxColour kInactive =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
 
     if (m_index >= m_sequence.steps.size())
     {

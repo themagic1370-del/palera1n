@@ -2,6 +2,7 @@
 #define STATE_H
 
 #include <string>
+#include <cstdint>
 
 enum class DeviceMode
 {

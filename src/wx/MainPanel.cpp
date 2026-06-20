@@ -58,7 +58,7 @@ MainPanel::MainPanel(MainFrame* frame, wxWindow* parent)
         "Thanks to: itsnebulalol, llsc12, lrdsnow, nikias (libimobiledevice), Checkra1n\n"
         "(Siguza, axi0mx, littlelailo et al.), Procursus (Hayden Seay, Cameron Katri,\n"
         "Keto et al.)\n\n"
-        "With 💖 from C (claration)");
+        "With <3 from C (claration)");
 
     root->Add(credtext, 0, wxLEFT | wxRIGHT, 10);
 
@@ -70,7 +70,11 @@ MainPanel::MainPanel(MainFrame* frame, wxWindow* parent)
         "wrong. Use at your own risk.");
 
     wxFont notefont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    #ifdef __APPLE__
     notefont.SetPointSize(12);
+    #else
+    notefont.SetPointSize(9);
+    #endif
     notefont.SetStyle(wxFONTSTYLE_ITALIC);
     notetext->SetFont(notefont);
 
@@ -101,8 +105,8 @@ MainPanel::MainPanel(MainFrame* frame, wxWindow* parent)
 
     auto* bottomRow = new wxBoxSizer(wxHORIZONTAL);
     bottomRow->AddStretchSpacer();
-    bottomRow->Add(btn, 0, wxALL, 10);
-    bottomRow->Add(m_startButton, 0, wxALL, 10);
+    bottomRow->Add(btn, 0, wxRIGHT | wxBOTTOM, 10);
+    bottomRow->Add(m_startButton, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
 
     root->Add(bottomRow, 0, wxEXPAND);
 
