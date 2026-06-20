@@ -1,62 +1,359 @@
-# Project
 cmake_minimum_required(VERSION 3.10)
 project(palera1n VERSION 3.0)
+
 include(FetchContent)
+include(ExternalProject)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -Wextra -DWX_PRECOMP")
 
-# Option for GUI (wxWidgets)
 option(WITH_GUI "Build with wxWidgets GUI" OFF)
-option(WITH_STATIC "Build with static wxWidgets" OFF)
+option(WITH_STATIC "Build with static wxWidgets / deps" OFF)
 
-# Architectures
 set(CMAKE_OSX_ARCHITECTURES "arm64")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Deps
+set(DEPS_PREFIX ${CMAKE_BINARY_DIR}/deps)
+
+# =========================
+# wxWidgets
+# =========================
 if(WITH_GUI)
-if(WITH_STATIC)
-    set(wxBUILD_SHARED OFF)
-    FetchContent_Declare(
-        wxWidgets
-        GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
-        GIT_SHALLOW ON
-    )
-    FetchContent_MakeAvailable(wxWidgets)
-    set(WX_LIBRARIES wxWidgets::core wxWidgets::base wxWidgets::net)
-else()
-    find_package(wxWidgets REQUIRED COMPONENTS core base net)
-    include(${wxWidgets_USE_FILE})
-    set(WX_LIBRARIES ${wxWidgets_LIBRARIES})
-endif()
+    if(WITH_STATIC)
+        set(wxBUILD_SHARED OFF CACHE BOOL "" FORCE)
+
+        FetchContent_Declare(
+            wxWidgets
+            GIT_REPOSITORY https://github.com/wxWidgets/wxWidgets.git
+            GIT_SHALLOW ON
+        )
+
+        FetchContent_MakeAvailable(wxWidgets)
+
+        set(WX_LIBRARIES wxcore wxbase wxnet)
+
+    else()
+        find_package(wxWidgets REQUIRED COMPONENTS core base net)
+        include(${wxWidgets_USE_FILE})
+        set(WX_LIBRARIES ${wxWidgets_LIBRARIES})
+    endif()
 endif()
 
-# Files
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.c" "src/*.h" "src/*.hpp")
+# =========================
+# JSON
+# =========================
 
+include(FetchContent)
+
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+)
+
+FetchContent_MakeAvailable(nlohmann_json)
+
+# =========================
+# SOURCES
+# =========================
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+    "src/*.cpp"
+    "src/*.c"
+    "src/*.h"
+    "src/*.hpp"
+)
+
+# =========================
+# TARGET
+# =========================
 if(APPLE AND WITH_GUI)
+    set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/resources/palera1n.icns)
+
     add_executable(palera1n MACOSX_BUNDLE ${SOURCES})
-    set_target_properties(palera1n PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist)
-elseif(APPLE)
-    add_executable(palera1n ${SOURCES})
+
+    target_sources(palera1n PRIVATE ${APP_ICON})
+
+    set_source_files_properties(${APP_ICON} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources"
+    )
+
+    set_target_properties(palera1n PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist
+        MACOSX_BUNDLE_ICON_FILE palera1n.icns
+    )
 else()
-    add_executable(palera1n WIN32 ${SOURCES} resources/main.exe.manifest)
+    add_executable(palera1n ${SOURCES})
 endif()
 
+include_directories(${DEPS_PREFIX}/include)
+link_directories(${DEPS_PREFIX}/lib)
+
+# =========================
+# APPLE FRAMEWORKS
+# =========================
 if(APPLE)
     find_library(IOKIT IOKit)
     find_library(COREFOUNDATION CoreFoundation)
-    target_link_libraries(palera1n PRIVATE ${IOKIT} ${COREFOUNDATION})
+
+    target_link_libraries(palera1n PRIVATE
+        ${IOKIT}
+        ${COREFOUNDATION}
+    )
 endif()
 
+# =========================
+# wxWidgets
+# =========================
 if(WITH_GUI)
-if(WITH_STATIC)
-    target_link_libraries(palera1n PRIVATE wxcore wxnet)
-else()
-    target_link_libraries(palera1n PRIVATE ${wxWidgets_LIBRARIES})
+    target_link_libraries(palera1n PRIVATE ${WX_LIBRARIES})
+    target_compile_definitions(palera1n PRIVATE WITH_GUI)
 endif()
-target_compile_definitions(palera1n PRIVATE WITH_GUI)
+
+target_link_libraries(palera1n PRIVATE nlohmann_json::nlohmann_json)
+
+# =========================
+# libimobiledevice
+# =========================
+if(WITH_GUI)
+    if(WITH_STATIC)
+        include(ExternalProject)
+
+        find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config REQUIRED)
+
+        set(PKG_ENV
+            env
+            PKG_CONFIG=${PKG_CONFIG_EXECUTABLE}
+            PKG_CONFIG_PATH=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+            PKG_CONFIG_LIBDIR=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+
+            CPPFLAGS=-I${DEPS_PREFIX}/include
+            LDFLAGS=-L${DEPS_PREFIX}/lib
+
+            C_INCLUDE_PATH=${DEPS_PREFIX}/include
+            CPLUS_INCLUDE_PATH=${DEPS_PREFIX}/include
+
+            libcurl_CFLAGS=-I/Applications/Xcode-26.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/usr/include
+            libcurl_LIBS=-lcurl
+
+            mbedtls_INCLUDES=${DEPS_PREFIX}/include
+            mbedtls_LIBDIR=${DEPS_PREFIX}/lib
+            mbedtls_LIBS=-lmbedtls\ -lmbedx509\ -lmbedcrypto
+        )
+
+        # =========================
+        # mbedTLS
+        # =========================
+        ExternalProject_Add(mbedtls_ep
+            GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
+            GIT_TAG mbedtls-3.5.2
+            UPDATE_COMMAND ""
+
+            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/0001-Allow-empty-x509-cert-issuer.patch
+
+            CMAKE_ARGS
+                -DCMAKE_INSTALL_PREFIX=${DEPS_PREFIX}
+                -DENABLE_TESTING=OFF
+                -DENABLE_PROGRAMS=OFF
+                -DBUILD_SHARED_LIBS=OFF
+
+            INSTALL_DIR ${DEPS_PREFIX}
+        )
+
+        # =========================
+        # libplist
+        # =========================
+        ExternalProject_Add(libplist_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libplist.git
+            GIT_TAG 2117b8fdb6b4096455bd2041a63e59a028120136
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+        )
+
+        # =========================
+        # libimobiledevice-glue
+        # =========================
+        ExternalProject_Add(limd_glue_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice-glue.git
+            GIT_TAG 362f7848ac89b74d9dd113b38b51ecb601f76094
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+
+            DEPENDS libplist_ep
+        )
+
+        # =========================
+        # libusbmuxd
+        # =========================
+        ExternalProject_Add(libusbmuxd_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libusbmuxd.git
+            GIT_TAG a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+
+            DEPENDS libplist_ep limd_glue_ep
+        )
+
+        # =========================
+        # libtatsu
+        # =========================
+        ExternalProject_Add(libtatsu_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libtatsu.git
+            GIT_SHALLOW 1
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+
+            DEPENDS libplist_ep
+        )
+
+        # =========================
+        # libimobiledevice
+        # =========================
+        ExternalProject_Add(libimobiledevice_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice.git
+            GIT_TAG ed0d66d0341562731bb19928dfe48155509fa7a7
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --with-mbedtls
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+
+            DEPENDS mbedtls_ep libplist_ep libusbmuxd_ep limd_glue_ep libtatsu_ep
+        )
+
+        # =========================
+        # libirecovery
+        # =========================
+        ExternalProject_Add(libirecovery_ep
+            GIT_REPOSITORY https://github.com/libimobiledevice/libirecovery.git
+            GIT_TAG 7ce02c347b7c26e59498e6af31c9da51018d0fa1
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --enable-static
+                --disable-shared
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+
+            DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep libtatsu_ep
+        )
+
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+
+        target_include_directories(palera1n PRIVATE
+            ${DEPS_PREFIX}/include
+        )
+
+        if(APPLE)
+            find_library(IOKIT IOKit)
+            find_library(COREFOUNDATION CoreFoundation)
+            find_library(SECURITY Security)
+
+            target_link_libraries(palera1n PRIVATE
+                ${IOKIT}
+                ${COREFOUNDATION}
+                ${SECURITY}
+            )
+        endif()
+
+        target_link_libraries(palera1n PRIVATE
+            ${DEPS_PREFIX}/lib/libimobiledevice-1.0.a
+            ${DEPS_PREFIX}/lib/libirecovery-1.0.a
+            ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
+            ${DEPS_PREFIX}/lib/libplist-2.0.a
+            ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
+            ${DEPS_PREFIX}/lib/libtatsu.a
+        )
+
+        target_link_libraries(palera1n PRIVATE
+            ${DEPS_PREFIX}/lib/libmbedtls.a
+            ${DEPS_PREFIX}/lib/libmbedx509.a
+            ${DEPS_PREFIX}/lib/libmbedcrypto.a
+        )
+
+        target_link_libraries(palera1n PRIVATE
+            curl
+        )
+    else()
+        find_package(PkgConfig REQUIRED)
+
+        pkg_check_modules(IMD REQUIRED libimobiledevice-1.0)
+        pkg_check_modules(IRECOVERY REQUIRED libirecovery-1.0)
+        pkg_check_modules(PLIST REQUIRED libplist-2.0)
+        pkg_check_modules(USBMUXD REQUIRED libusbmuxd-2.0)
+
+        target_include_directories(palera1n PRIVATE
+            ${IMD_INCLUDE_DIRS}
+            ${IRECOVERY_INCLUDE_DIRS}
+            ${PLIST_INCLUDE_DIRS}
+            ${USBMUXD_INCLUDE_DIRS}
+        )
+
+        target_link_libraries(palera1n PRIVATE
+            ${IMD_LIBRARIES}
+            ${IRECOVERY_LIBRARIES}
+            ${PLIST_LIBRARIES}
+            ${USBMUXD_LIBRARIES}
+        )
+
+        target_compile_options(palera1n PRIVATE
+            ${IMD_CFLAGS_OTHER}
+            ${IRECOVERY_INCLUDE_DIRS}
+            ${PLIST_CFLAGS_OTHER}
+            ${USBMUXD_CFLAGS_OTHER}
+        )
+    endif()
 endif()

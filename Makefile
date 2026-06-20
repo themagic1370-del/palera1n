@@ -5,19 +5,21 @@ WITH_STATIC ?= 0
 BUILD_TYPE ?= Debug
 
 payloads:
-	@mkdir -p src/exploit/payloads
-	@for file in payloads/*; do \
+	@for file in images/*; do \
+		name=$$(basename "$$file"); \
+		name=$${name%.*}; \
 		echo " XXD    $$file"; \
-		xxd -i $$file > src/exploit/$$file.h; \
+		xxd -i -n "$$name" "$$file" > "src/gen/images/$$name.h"; \
 	done
-	xxd -i resources/logo.png > src/exploit/logo.h
+
+	xxd -i -n "DFUHelperDeviceInfo" resources/DFUHelperDeviceInfo.json > src/gen/DFUHelperDeviceInfo.h
 
 palera1n: payloads
 	@cmake -S . -B build \
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DWITH_GUI=$(WITH_GUI) \
 		-DWITH_STATIC=$(WITH_STATIC) && \
-	cmake --build build -- -j$(sysctl -n hw.ncpu)
+	cmake --build build -- -j4
 
 palera1n_xcode: payloads
 	@cmake -S . -B build \

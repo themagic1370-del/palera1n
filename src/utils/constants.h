@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define PALERAIN_VERSION "2.4.0"
+#define PALERAIN_VERSION "3.0.0"
 
 #include <cstdint>
 

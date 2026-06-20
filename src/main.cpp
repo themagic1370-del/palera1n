@@ -5,12 +5,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#if defined(__APPLE__)
-#include <CoreFoundation/CoreFoundation.h>
-#include <IOKit/IOKitLib.h>
-#include <IOKit/usb/IOUSBLib.h>
-#endif
-
 #ifdef WITH_GUI
 # include <wx/wx.h>
 #endif
@@ -21,9 +15,16 @@
 
 void print_credits() {
     printf(
-        ":: ========================== ::\n"
-        ":: palera1n: " PALERAIN_VERSION "\n"
-        ":: ========================== ::\n\n"
+        "#\n"
+        "# palera1n: " PALERAIN_VERSION "\n"
+        "#\n"
+        "# ========  Made by  =======\n"
+        "# Made by: asdfugil, kok3shidoll, claration, mineek, staturnz\n"
+        "# ======== Thanks to =======\n"
+        "# Thanks to: llsc12, Nebula, Lrdsnow, nikias (libimobiledevice),\n"
+        "# checkra1n team (Siguza, axi0mx, littlelailo et al.),\n"
+        "# Procursus Team (Hayden Seay, Cameron Katri, Keto et.al)\n"
+        "# ==========================\n\n"
     );
 }
 
