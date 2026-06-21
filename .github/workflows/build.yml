@@ -2,7 +2,7 @@ name: "Build"
 
 on:
   workflow_dispatch:
-  on_push:
+  push:
     branches:
       - koputer
       - main
@@ -24,10 +24,10 @@ jobs:
           make palera1n WITH_STATIC=1 BUILD_TYPE=Release
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: palera1n-linux
-          files: |
+          path: |
             build/palera1n
 
   build-macos:
@@ -53,10 +53,10 @@ jobs:
           make palera1n WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: palera1n-macos-${{ matrix.arch }}
-          files: |
+          path: |
             build/palera1n.app
 
   build-windows:
@@ -91,9 +91,9 @@ jobs:
           make palera1n_mingw WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: palera1n-windows-x86_64
-          files: | 
+          path: |
             build/*.exe 
             build/*.dll
