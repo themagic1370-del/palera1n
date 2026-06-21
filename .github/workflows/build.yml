@@ -1,0 +1,66 @@
+name: "Build"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential cmake autoconf automake libtool pkg-config ninja-build
+
+      - name: "Build palera1n"
+        run: |
+          make palera1n WITH_STATIC=1 WITH_GUI=1
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install dependencies"
+        run: |
+          brew update
+          brew install cmake autoconf automake libtool pkg-config
+
+      - name: "Build palera1n"
+        run: |
+          make palera1n WITH_STATIC=1 WITH_GUI=1
+
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >
+            git
+            mingw-w64-x86_64-gcc 
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-cmake
+            libtool
+            openssl
+            openssl-devel
+            python-devel
+            pkgconf
+            autoconf
+            automake
+            make
+            zip
+          update: true
+
+      - name: "Build palera1n"
+        run: |
+          make palera1n_mingw WITH_STATIC=1 WITH_GUI=1
+  

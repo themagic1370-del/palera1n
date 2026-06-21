@@ -85,12 +85,12 @@
             "image_offset_x":100,
             "buttons":{
                 "top":{
-                    "name":"– Top button",
+                    "name":"- Top button",
                     "x":192,
                     "y":-4
                 },
                 "vol_down":{
-                    "name":"Volume down –",
+                    "name":"Volume down -",
                     "x":8,
                     "y":62
                 }
@@ -104,12 +104,12 @@
             "image_offset_x":100,
             "buttons":{
                 "top":{
-                    "name":"– Top button",
+                    "name":"- Top button",
                     "x":196,
                     "y":-4
                 },
                 "home":{
-                    "name":"Home button –",
+                    "name":"Home button -",
                     "x":50,
                     "y":210
                 }
@@ -123,12 +123,12 @@
             "image_offset_x":100,
             "buttons":{
                 "top":{
-                    "name":"– Top button",
+                    "name":"- Top button",
                     "x":200,
                     "y":-4
                 },
                 "home":{
-                    "name":"Home button –",
+                    "name":"Home button -",
                     "x":56,
                     "y":210
                 }
@@ -142,12 +142,12 @@
             "image_offset_x":100,
             "buttons":{
                 "side":{
-                    "name":"– Side button",
+                    "name":"- Side button",
                     "x":224,
                     "y":58
                 },
                 "home":{
-                    "name":"Home button –",
+                    "name":"Home button -",
                     "x":60,
                     "y":210
                 }
@@ -161,12 +161,12 @@
             "image_offset_x":100,
             "buttons":{
                 "side":{
-                    "name":"– Side button",
+                    "name":"- Side button",
                     "x":224,
                     "y":58
                 },
                 "vol_down":{
-                    "name":"Volume down –",
+                    "name":"Volume down -",
                     "x":14,
                     "y":78
                 }
@@ -180,12 +180,12 @@
             "image_offset_x":100,
             "buttons":{
                 "side":{
-                    "name":"– Side button",
+                    "name":"- Side button",
                     "x":220,
                     "y":58
                 },
                 "vol_down":{
-                    "name":"Volume down –",
+                    "name":"Volume down -",
                     "x":10,
                     "y":78
                 }
@@ -199,12 +199,12 @@
             "image_offset_x":100,
             "buttons":{
                 "side":{
-                    "name":"– Side button",
+                    "name":"- Side button",
                     "x":220,
                     "y":68
                 },
                 "vol_down":{
-                    "name":"Volume down –",
+                    "name":"Volume down -",
                     "x":10,
                     "y":75
                 }
@@ -254,12 +254,12 @@
             "image_offset_x":120,
             "buttons":{
                 "menu":{
-                    "name":"Menu –",
+                    "name":"Menu -",
                     "x":84,
                     "y":84
                 },
                 "playpause":{
-                    "name":"Play/Pause –",
+                    "name":"Play/Pause -",
                     "x":52,
                     "y":146
                 }

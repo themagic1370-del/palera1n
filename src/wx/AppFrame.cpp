@@ -12,6 +12,11 @@
 #include <libimobiledevice/lockdown.h>
 #include <libirecovery.h>
 
+#ifdef _WIN32
+# include <windows.h>
+# define sleep(x) Sleep(x*1000)
+#endif
+
 wxDEFINE_EVENT(EVT_DEVICE_STATE_UPDATE, wxCommandEvent);
 
 void send_device_state(MainFrame* frame, const DeviceState& state)
@@ -26,7 +31,7 @@ void send_device_state(MainFrame* frame, const DeviceState& state)
 MainFrame::MainFrame()
     : wxFrame(nullptr,
               wxID_ANY,
-              "palera1n – Version beta " + wxString(PALERAIN_VERSION),
+              "palera1n - Version beta " + wxString(PALERAIN_VERSION),
               wxDefaultPosition,
               wxSize(480, 360),
               wxDEFAULT_FRAME_STYLE & ~(wxMAXIMIZE_BOX | wxRESIZE_BORDER))
