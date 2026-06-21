@@ -20,7 +20,7 @@ palera1n: payloads
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DWITH_GUI=$(WITH_GUI) \
 		-DWITH_STATIC=$(WITH_STATIC) && \
-	cmake --build build -- -j4
+	cmake --build build
 
 palera1n_xcode: payloads
 	@cmake -S . -B build \
@@ -28,6 +28,14 @@ palera1n_xcode: payloads
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DWITH_GUI=$(WITH_GUI) \
 		-DWITH_STATIC=$(WITH_STATIC)
+
+palera1n_mingw: payloads
+	@cmake -S . -B build \
+		-G "MinGW Makefiles" \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DWITH_GUI=$(WITH_GUI) \
+		-DWITH_STATIC=$(WITH_STATIC) && \
+	cmake --build build
 
 clean:
 	@rm -rf build

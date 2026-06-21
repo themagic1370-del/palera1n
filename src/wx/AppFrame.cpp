@@ -160,6 +160,10 @@ void MainFrame::UpdateDeviceState(const DeviceState& state)
 
 bool PalerainApp::OnInit()
 {
+    #ifdef _WIN32
+    wxTheApp->SetAppearance(wxApp::Appearance::Dark);
+    #endif
+
     auto* frame = new MainFrame();
     frame->Show(true);
     return true;

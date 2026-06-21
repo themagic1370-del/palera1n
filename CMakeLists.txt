@@ -14,7 +14,11 @@ set(CMAKE_OSX_ARCHITECTURES "arm64")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(DEPS_PREFIX ${CMAKE_BINARY_DIR}/deps)
+if(MINGW)
+    set(DEPS_PREFIX /mingw64)
+else()
+    set(DEPS_PREFIX ${CMAKE_SOURCE_DIR}/deps)
+endif()
 
 # =========================
 # wxWidgets
@@ -82,6 +86,9 @@ if(APPLE AND WITH_GUI)
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist
         MACOSX_BUNDLE_ICON_FILE palera1n.icns
     )
+elseif(MINGW OR MSYS AND WITH_GUI)
+    set(APP_MANIFEST_RC ${CMAKE_SOURCE_DIR}/resources/app.rc)
+    add_executable(palera1n WIN32 ${SOURCES} ${APP_MANIFEST_RC})
 else()
     add_executable(palera1n ${SOURCES})
 endif()
@@ -119,13 +126,14 @@ if(WITH_GUI)
     if(WITH_STATIC)
         include(ExternalProject)
 
-        find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config REQUIRED)
+        find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
 
         set(PKG_ENV
             env
             PKG_CONFIG=${PKG_CONFIG_EXECUTABLE}
             PKG_CONFIG_PATH=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
             PKG_CONFIG_LIBDIR=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+            PKG_CONFIG_PATH_CUSTOM=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
 
             CPPFLAGS=-I${DEPS_PREFIX}/include
             LDFLAGS=-L${DEPS_PREFIX}/lib
@@ -138,6 +146,22 @@ if(WITH_GUI)
             mbedtls_LIBS=-lmbedtls\ -lmbedx509\ -lmbedcrypto
         )
 
+        if(MINGW OR MSYS)
+            set(IMD_AUTOTOOLS_ARGS
+                --disable-static
+                --enable-shared
+            )
+        else()
+            set(IMD_AUTOTOOLS_ARGS
+                --enable-static
+                --disable-shared
+            )
+            set(MBEDUTILS_ARGS
+                --with-mbedtls
+            )
+        endif()
+
+        if(NOT MINGW AND NOT MSYS)
         # =========================
         # mbedTLS
         # =========================
@@ -156,8 +180,9 @@ if(WITH_GUI)
 
             INSTALL_DIR ${DEPS_PREFIX}
         )
+        endif()
 
-        if(LINUX)
+        if(LINUX OR MINGW OR MSYS)
             # =========================
             # libusb
             # =========================
@@ -168,6 +193,8 @@ if(WITH_GUI)
 
                 CONFIGURE_COMMAND
                     ${PKG_ENV}
+                    sh
+                    -l
                     ./autogen.sh
                     --prefix=${DEPS_PREFIX}
                     --disable-udev
@@ -188,10 +215,11 @@ if(WITH_GUI)
 
             CONFIGURE_COMMAND
                 ${PKG_ENV}
+                sh
+                -l
                 ./autogen.sh
                 --prefix=${DEPS_PREFIX}
-                --enable-static
-                --disable-shared
+                ${IMD_AUTOTOOLS_ARGS}
 
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
@@ -208,10 +236,11 @@ if(WITH_GUI)
 
             CONFIGURE_COMMAND
                 ${PKG_ENV}
+                sh
+                -l
                 ./autogen.sh
                 --prefix=${DEPS_PREFIX}
-                --enable-static
-                --disable-shared
+                ${IMD_AUTOTOOLS_ARGS}
 
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
@@ -230,10 +259,11 @@ if(WITH_GUI)
 
             CONFIGURE_COMMAND
                 ${PKG_ENV}
+                sh
+                -l
                 ./autogen.sh
                 --prefix=${DEPS_PREFIX}
-                --enable-static
-                --disable-shared
+                ${IMD_AUTOTOOLS_ARGS}
                 --without-systemd
 
             BUILD_COMMAND make -j
@@ -248,13 +278,16 @@ if(WITH_GUI)
         # =========================
 
         set(LIBIMOBILEDEVICE_DEPS
-            mbedtls_ep
             libplist_ep
             libusbmuxd_ep
             limd_glue_ep
         )
 
-        if(LINUX)
+        if(NOT MINGW AND NOT MSYS)
+             list(APPEND LIBIMOBILEDEVICE_DEPS mbedtls_ep)
+        endif()
+
+        if(LINUX OR MINGW OR MSYS)
             list(APPEND LIBIMOBILEDEVICE_DEPS libusb_ep)
         endif()
 
@@ -263,13 +296,16 @@ if(WITH_GUI)
             GIT_TAG ed0d66d0341562731bb19928dfe48155509fa7a7
             UPDATE_COMMAND ""
 
+            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/libimobiledevice/0001-include-windows-header.patch
+
             CONFIGURE_COMMAND
                 ${PKG_ENV}
+                sh
+                -l
                 ./autogen.sh
                 --prefix=${DEPS_PREFIX}
-                --with-mbedtls
-                --enable-static
-                --disable-shared
+                ${MBEDUTILS_ARGS}
+                ${IMD_AUTOTOOLS_ARGS}
                 --disable-wireless-pairing
 
             BUILD_COMMAND make -j
@@ -301,10 +337,11 @@ if(WITH_GUI)
 
             CONFIGURE_COMMAND
                 ${PKG_ENV}
+                sh
+                -l
                 ./autogen.sh
                 --prefix=${DEPS_PREFIX}
-                --enable-static
-                --disable-shared
+                ${IMD_AUTOTOOLS_ARGS}
 
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
@@ -313,7 +350,17 @@ if(WITH_GUI)
             DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep
         )
 
-        set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+        add_dependencies(palera1n
+            libplist_ep
+            limd_glue_ep
+            libusbmuxd_ep
+            libimobiledevice_ep
+            libirecovery_ep
+        )
+
+        if(NOT MINGW AND NOT MSYS)
+            add_dependencies(palera1n mbedtls_ep)
+        endif()
 
         target_include_directories(palera1n PRIVATE
             ${DEPS_PREFIX}/include
@@ -331,23 +378,55 @@ if(WITH_GUI)
             )
         endif()
 
-        target_link_libraries(palera1n PRIVATE
-            ${DEPS_PREFIX}/lib/libimobiledevice-1.0.a
-            ${DEPS_PREFIX}/lib/libirecovery-1.0.a
-            ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
-            ${DEPS_PREFIX}/lib/libplist-2.0.a
-            ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
-            ${DEPS_PREFIX}/lib/libmbedtls.a
-            ${DEPS_PREFIX}/lib/libmbedx509.a
-            ${DEPS_PREFIX}/lib/libmbedcrypto.a
-        )
-
-        if(LINUX)
+        if(MINGW OR MSYS)
             target_link_libraries(palera1n PRIVATE
-                ${DEPS_PREFIX}/lib/libusb-1.0.a
+                imobiledevice-1.0
+                irecovery-1.0
+                usbmuxd-2.0
+                plist-2.0
+                imobiledevice-glue-1.0
+                usb-1.0
             )
-        endif()
+            
+            set(DLLS
+                libcrypto-3-x64.dll
+                libssl-3-x64.dll
+                libstdc++-6.dll
+                libgcc_s_seh-1.dll
+                libwinpthread-1.dll
+                libimobiledevice-1.0.dll
+                libimobiledevice-glue-1.0.dll
+                libirecovery-1.0.dll
+                libplist-2.0.dll
+                libusbmuxd-2.0.dll
+                libusb-1.0.dll
+            )
 
+            foreach(DLL ${DLLS})
+                add_custom_command(TARGET palera1n POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "C:/tools/msys64/mingw64/bin/${DLL}"
+                        $<TARGET_FILE_DIR:palera1n>
+                )
+            endforeach()
+        else()
+            target_link_libraries(palera1n PRIVATE
+                ${DEPS_PREFIX}/lib/libimobiledevice-1.0.a
+                ${DEPS_PREFIX}/lib/libirecovery-1.0.a
+                ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
+                ${DEPS_PREFIX}/lib/libplist-2.0.a
+                ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
+                ${DEPS_PREFIX}/lib/libmbedtls.a
+                ${DEPS_PREFIX}/lib/libmbedx509.a
+                ${DEPS_PREFIX}/lib/libmbedcrypto.a
+            )
+            
+            if(LINUX)
+                target_link_libraries(palera1n PRIVATE
+                    ${DEPS_PREFIX}/lib/libusb-1.0.a
+                )
+            endif()
+        endif()
     else()
         find_package(PkgConfig REQUIRED)
 
@@ -372,7 +451,7 @@ if(WITH_GUI)
 
         target_compile_options(palera1n PRIVATE
             ${IMD_CFLAGS_OTHER}
-            ${IRECOVERY_INCLUDE_DIRS}
+            ${IRECOVERY_CFLAGS_OTHER}
             ${PLIST_CFLAGS_OTHER}
             ${USBMUXD_CFLAGS_OTHER}
         )
