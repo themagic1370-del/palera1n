@@ -17,7 +17,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(MINGW)
     set(DEPS_PREFIX /mingw64)
 else()
-    set(DEPS_PREFIX ${CMAKE_SOURCE_DIR}/deps)
+    set(DEPS_PREFIX ${CMAKE_BINARY_DIR}/deps)
 endif()
 
 # =========================
@@ -387,7 +387,7 @@ if(WITH_GUI)
                 imobiledevice-glue-1.0
                 usb-1.0
             )
-            
+
             set(DLLS
                 libcrypto-3-x64.dll
                 libssl-3-x64.dll
@@ -420,7 +420,7 @@ if(WITH_GUI)
                 ${DEPS_PREFIX}/lib/libmbedx509.a
                 ${DEPS_PREFIX}/lib/libmbedcrypto.a
             )
-            
+
             if(LINUX)
                 target_link_libraries(palera1n PRIVATE
                     ${DEPS_PREFIX}/lib/libusb-1.0.a
