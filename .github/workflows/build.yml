@@ -71,18 +71,17 @@ jobs:
           msystem: MINGW64
           install: >
             git
-            mingw-w64-x86_64-gcc 
-            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             libtool
             openssl
             openssl-devel
             python-devel
-            pkgconf
             autoconf
             automake
-            make
             zip
+            vim
+            make
           update: true
 
       - name: Build
