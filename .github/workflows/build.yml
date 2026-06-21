@@ -51,13 +51,14 @@ jobs:
       - name: Build
         run: |
           make palera1n WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
+          cd build && zip -r palera1n-macos-${{ matrix.arch }}.zip palera1n.app
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: palera1n-macos-${{ matrix.arch }}
           path: |
-            build/palera1n.app
+            build/palera1n-macos-${{ matrix.arch }}.zip
 
   build-windows:
     runs-on: windows-latest

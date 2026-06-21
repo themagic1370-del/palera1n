@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 option(WITH_GUI "Build with wxWidgets GUI" OFF)
 option(WITH_STATIC "Build with static wxWidgets / deps" OFF)
 
-set(CMAKE_OSX_ARCHITECTURES "arm64")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
