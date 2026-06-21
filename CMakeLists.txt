@@ -401,10 +401,16 @@ if(WITH_GUI)
                 libusb-1.0.dll
             )
 
+            execute_process(
+                COMMAND cygpath -w "$ENV{MSYSTEM_PREFIX}/bin"
+                OUTPUT_VARIABLE MSYSTEM_PREFIX_WIN
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
             foreach(DLL ${DLLS})
                 add_custom_command(TARGET palera1n POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        "C:/tools/msys64/mingw64/bin/${DLL}"
+                        "${MSYSTEM_PREFIX_WIN}/${DLL}"
                         $<TARGET_FILE_DIR:palera1n>
                 )
             endforeach()
