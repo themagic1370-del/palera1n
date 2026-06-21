@@ -73,6 +73,9 @@ void parse_arguments(int argc, char* argv[]) {
     };
 
     #ifdef WITH_GUI
+    palerain_flags |= palerain_option_gui;
+    # ifdef _WIN32
+    # else
     if (isatty(STDIN_FILENO) && getenv("LLVM_PROFILE_FILE") == nullptr) {
         palerain_flags &= ~palerain_option_gui;
         palerain_flags |= palerain_option_cli;
@@ -80,6 +83,7 @@ void parse_arguments(int argc, char* argv[]) {
         palerain_flags &= ~palerain_option_cli;
         palerain_flags |= palerain_option_gui;
     }
+    # endif
     #else
     palerain_flags |= palerain_option_cli;
     #endif
