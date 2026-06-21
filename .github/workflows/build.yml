@@ -83,6 +83,7 @@ jobs:
             zip
             vim
             make
+            patch
           update: true
 
       - name: Build
