@@ -16,7 +16,9 @@
 void print_credits() {
     printf(
         "#\n"
-        "# palera1n: " PALERAIN_VERSION "\n"
+        "# Palera1n beta " PALERAIN_VERSION "\n"
+        "#\n"
+        "# (c) 2024 Palera1n\n"
         "#\n"
         "# ========  Made by  =======\n"
         "# Made by: asdfugil, kok3shidoll, claration, mineek, staturnz\n"

@@ -6,6 +6,15 @@ BUILD_TYPE ?= Debug
 
 payloads:
 	mkdir -p src/gen/images
+	mkdir -p src/gen/payloads
+
+	@for file in payloads/*; do \
+		name=$$(basename "$$file"); \
+		name=$${name%.*}; \
+		echo " XXD    $$file"; \
+		xxd -i -n "$$name" "$$file" > "src/gen/payloads/$$name.h"; \
+	done
+
 	@for file in images/*; do \
 		name=$$(basename "$$file"); \
 		name=$${name%.*}; \

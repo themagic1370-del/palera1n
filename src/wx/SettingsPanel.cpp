@@ -26,7 +26,7 @@ SettingsPanel::SettingsPanel(MainFrame* frame, wxWindow* parent)
     option_safemode->SetValue(palerain_flags & palerain_option_safemode);
     option_verbose->SetValue(palerain_flags & palerain_option_verbose_boot);
     option_revert->SetValue(palerain_flags & palerain_option_force_revert);
-    option_dark_blockchain->SetValue(true);
+    option_dark_blockchain->SetValue(palerain_flags & palerain_option_flower_chain);
 
     option_safemode->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& e)
     {
@@ -50,6 +50,14 @@ SettingsPanel::SettingsPanel(MainFrame* frame, wxWindow* parent)
             palerain_flags |= palerain_option_force_revert;
         else
             palerain_flags &= ~palerain_option_force_revert;
+    });
+
+    option_dark_blockchain->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& e)
+    {
+        if (e.IsChecked())
+            palerain_flags |= palerain_option_flower_chain;
+        else
+            palerain_flags &= ~palerain_option_flower_chain;
     });
 
     root->Add(option_safemode, 0, wxLEFT | wxRIGHT, 10);
