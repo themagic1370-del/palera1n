@@ -206,7 +206,7 @@ if(WITH_STATIC)
         # =========================
         ExternalProject_Add(libusb_ep
             GIT_REPOSITORY https://github.com/libusb/libusb.git
-            GIT_TAG 8.2
+            GIT_TAG v1.0.27
             UPDATE_COMMAND ""
 
             CONFIGURE_COMMAND
