@@ -369,6 +369,13 @@ if(WITH_STATIC)
     # =========================
     # libirecovery
     # =========================
+
+    if(LINUX)
+    set(LIBIRECOVERY_LIBS
+        LIBS="-lncurses"
+    )
+    endif()
+
     ExternalProject_Add(libirecovery_ep
         GIT_REPOSITORY https://github.com/libimobiledevice/libirecovery.git
         GIT_TAG 7ce02c347b7c26e59498e6af31c9da51018d0fa1
@@ -382,7 +389,7 @@ if(WITH_STATIC)
             --prefix=${DEPS_PREFIX}
             ${IMD_AUTOTOOLS_ARGS}
 
-        BUILD_COMMAND make -j
+        BUILD_COMMAND make -j ${LIBIRECOVERY_LIBS}
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
 
