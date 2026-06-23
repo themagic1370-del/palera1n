@@ -327,7 +327,7 @@ if(WITH_STATIC)
     endif()
 
     if(LINUX)
-        list(APPEND LIBIMOBILEDEVICE_DEPS readline_ep)
+        set(READLINE_DEPS readline_ep)
     endif()
 
     ExternalProject_Add(libimobiledevice_ep
@@ -351,7 +351,7 @@ if(WITH_STATIC)
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
 
-        DEPENDS ${LIBIMOBILEDEVICE_DEPS}
+        DEPENDS ${LIBIMOBILEDEVICE_DEPS} ${READLINE_DEPS}
     )
 
     file(WRITE
@@ -393,7 +393,7 @@ if(WITH_STATIC)
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
 
-        DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep
+        DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep ${READLINE_DEPS}
     )
 
     add_dependencies(palera1n

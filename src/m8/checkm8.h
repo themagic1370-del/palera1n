@@ -1,6 +1,8 @@
 #ifndef CHEKMC8_H
 #define CHEKMC8_H
 
+#include <stdbool.h>
+
 #include "payload.h"
 
 #ifndef __APPLE__

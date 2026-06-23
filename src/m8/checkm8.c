@@ -1,6 +1,7 @@
 #include "checkm8.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "../utils/log.h"
 
