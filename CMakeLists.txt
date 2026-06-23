@@ -206,7 +206,7 @@ if(WITH_STATIC)
         # =========================
         ExternalProject_Add(libusb_ep
             GIT_REPOSITORY https://github.com/libusb/libusb.git
-            GIT_TAG v1.0.27
+            GIT_TAG 8.2
             UPDATE_COMMAND ""
 
             CONFIGURE_COMMAND
@@ -220,6 +220,23 @@ if(WITH_STATIC)
             BUILD_COMMAND make -j
             INSTALL_COMMAND make install
             BUILD_IN_SOURCE 1
+        )
+    endif()
+
+    if(LINUX)
+        ExternalProject_Add(readline_ep
+            URL https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                sh
+                -l
+                <SOURCE_DIR>/configure
+                --prefix=${DEPS_PREFIX}
+                ${IMD_AUTOTOOLS_ARGS}
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
         )
     endif()
 
@@ -302,11 +319,15 @@ if(WITH_STATIC)
     )
 
     if(NOT MINGW AND NOT MSYS)
-            list(APPEND LIBIMOBILEDEVICE_DEPS mbedtls_ep)
+        list(APPEND LIBIMOBILEDEVICE_DEPS mbedtls_ep)
     endif()
 
     if(LINUX OR MINGW OR MSYS)
         list(APPEND LIBIMOBILEDEVICE_DEPS libusb_ep)
+    endif()
+
+    if(LINUX)
+        list(APPEND LIBIMOBILEDEVICE_DEPS readline_ep)
     endif()
 
     ExternalProject_Add(libimobiledevice_ep
@@ -380,6 +401,10 @@ if(WITH_STATIC)
         add_dependencies(palera1n mbedtls_ep)
     endif()
 
+    if(LINUX)
+        add_dependencies(palera1n readline_ep)
+    endif()
+
     target_include_directories(palera1n PRIVATE
         ${DEPS_PREFIX}/include
     )
@@ -448,6 +473,7 @@ if(WITH_STATIC)
         if(LINUX)
             target_link_libraries(palera1n PRIVATE
                 ${DEPS_PREFIX}/lib/libusb-1.0.a
+                ${DEPS_PREFIX}/lib/libreadline.a
             )
         endif()
     endif()
