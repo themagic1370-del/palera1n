@@ -3,98 +3,143 @@ name: "Build"
 on:
   workflow_dispatch:
   push:
-    branches:
+      branches:
       - koputer
       - main
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build-pongo:
+    runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Install dependencies (apt)
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential cmake autoconf automake libtool pkg-config
+    - name: Build
+      run: |
+        make
 
-      - name: Build
-        run: |
-          make palera1n WITH_STATIC=1 BUILD_TYPE=Release
+    - name: Prepare upload directory
+      run: |
+        mkdir upload
+        mv build/Pongo.bin upload/
+        mv build/checkra1n-kpf-pongo upload/
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: palera1n-linux
-          path: |
-            build/palera1n
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: pongo
+        path: |
+          upload/*
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: build-pongo
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download Pongo
+      uses: actions/download-artifact@v4
+      with:
+        name: pongo
+        path: payloads/
+
+    - name: Install dependencies (apt)
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential cmake autoconf automake libtool pkg-config
+
+    - name: Build
+      run: |
+        make palera1n WITH_STATIC=1 BUILD_TYPE=Release
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: palera1n-linux
+        path: |
+          build/palera1n
 
   build-macos:
     runs-on: ${{ matrix.os }}
+    needs: build-pongo
+
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            arch: arm64
-          - os: macos-15-intel
-            arch: x86_64
+        - os: macos-latest
+          arch: arm64
+        - os: macos-15-intel
+          arch: x86_64
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Install dependencies (brew)
-        run: |
-          brew update
-          brew install cmake autoconf automake libtool pkg-config
+    - name: Download Pongo
+      uses: actions/download-artifact@v4
+      with:
+        name: pongo
+        path: payloads/
 
-      - name: Build
-        run: |
-          make palera1n WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
-          cd build && zip -r palera1n-macos-${{ matrix.arch }}.zip palera1n.app
+    - name: Install dependencies (brew)
+      run: |
+        brew update
+        brew install cmake autoconf automake libtool pkg-config
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: palera1n-macos-${{ matrix.arch }}
-          path: |
-            build/palera1n-macos-${{ matrix.arch }}.zip
+    - name: Build
+      run: |
+        make palera1n WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
+        cd build && zip -r palera1n-macos-${{ matrix.arch }}.zip palera1n.app
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: palera1n-macos-${{ matrix.arch }}
+        path: |
+          build/palera1n-macos-${{ matrix.arch }}.zip
 
   build-windows:
     runs-on: windows-latest
+    needs: build-pongo
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          install: >
-            git
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            libtool
-            openssl
-            openssl-devel
-            python-devel
-            autoconf
-            automake
-            zip
-            vim
-            make
-            patch
-          update: true
+    - name: Download Pongo
+      uses: actions/download-artifact@v4
+      with:
+        name: pongo
+        path: payloads/
 
-      - name: Build
-        shell: msys2 {0}
-        run: |
-          make palera1n_mingw WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
+    - name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: >
+          git
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          libtool
+          openssl
+          openssl-devel
+          python-devel
+          autoconf
+          automake
+          zip
+          vim
+          make
+          patch
+      update: true
 
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: palera1n-windows-x86_64
-          path: |
-            build/*.exe 
-            build/*.dll
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        make palera1n_mingw WITH_STATIC=1 WITH_GUI=1 BUILD_TYPE=Release
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: palera1n-windows-x86_64
+        path: |
+          build/*.exe
+          build/*.dll

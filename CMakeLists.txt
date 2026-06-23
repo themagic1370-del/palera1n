@@ -58,6 +58,23 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(nlohmann_json)
 
 # =========================
+# LZ4
+# =========================
+
+include(FetchContent)
+
+set(LZ4_BUILD_CLI OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    lz4
+    GIT_REPOSITORY https://github.com/lz4/lz4.git
+    GIT_TAG v1.10.0
+    SOURCE_SUBDIR  build/cmake
+)
+
+FetchContent_MakeAvailable(lz4)
+
+# =========================
 # SOURCES
 # =========================
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
@@ -117,348 +134,354 @@ if(WITH_GUI)
 endif()
 
 target_link_libraries(palera1n PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(palera1n PRIVATE lz4_static)
+
 
 # =========================
 # libimobiledevice
 # =========================
-if(WITH_GUI)
-    if(WITH_STATIC)
-        include(ExternalProject)
 
-        find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
+if(WITH_STATIC)
+    include(ExternalProject)
 
-        set(PKG_ENV
-            env
-            PKG_CONFIG=${PKG_CONFIG_EXECUTABLE}
-            PKG_CONFIG_PATH=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
-            PKG_CONFIG_LIBDIR=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
-            PKG_CONFIG_PATH_CUSTOM=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+    find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config)
 
-            CPPFLAGS=-I${DEPS_PREFIX}/include
-            LDFLAGS=-L${DEPS_PREFIX}/lib
+    set(PKG_ENV
+        env
+        PKG_CONFIG=${PKG_CONFIG_EXECUTABLE}
+        PKG_CONFIG_PATH=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+        PKG_CONFIG_LIBDIR=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
+        PKG_CONFIG_PATH_CUSTOM=${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/share/pkgconfig
 
-            C_INCLUDE_PATH=${DEPS_PREFIX}/include
-            CPLUS_INCLUDE_PATH=${DEPS_PREFIX}/include
+        CPPFLAGS=-I${DEPS_PREFIX}/include
+        LDFLAGS=-L${DEPS_PREFIX}/lib
 
-            mbedtls_INCLUDES=${DEPS_PREFIX}/include
-            mbedtls_LIBDIR=${DEPS_PREFIX}/lib
-            mbedtls_LIBS=-lmbedtls\ -lmbedx509\ -lmbedcrypto
+        C_INCLUDE_PATH=${DEPS_PREFIX}/include
+        CPLUS_INCLUDE_PATH=${DEPS_PREFIX}/include
+
+        mbedtls_INCLUDES=${DEPS_PREFIX}/include
+        mbedtls_LIBDIR=${DEPS_PREFIX}/lib
+        mbedtls_LIBS=-lmbedtls\ -lmbedx509\ -lmbedcrypto
+    )
+
+    if(MINGW OR MSYS)
+        set(IMD_AUTOTOOLS_ARGS
+            --disable-static
+            --enable-shared
         )
-
-        if(MINGW OR MSYS)
-            set(IMD_AUTOTOOLS_ARGS
-                --disable-static
-                --enable-shared
-            )
-        else()
-            set(IMD_AUTOTOOLS_ARGS
-                --enable-static
-                --disable-shared
-            )
-            set(MBEDUTILS_ARGS
-                --with-mbedtls
-            )
-        endif()
-
-        if(NOT MINGW AND NOT MSYS)
-        # =========================
-        # mbedTLS
-        # =========================
-        ExternalProject_Add(mbedtls_ep
-            GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
-            GIT_TAG mbedtls-3.5.2
-            UPDATE_COMMAND ""
-
-            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch
-
-            CMAKE_ARGS
-                -DCMAKE_INSTALL_PREFIX=${DEPS_PREFIX}
-                -DENABLE_TESTING=OFF
-                -DENABLE_PROGRAMS=OFF
-                -DBUILD_SHARED_LIBS=OFF
-
-            INSTALL_DIR ${DEPS_PREFIX}
-        )
-        endif()
-
-        if(LINUX OR MINGW OR MSYS)
-            # =========================
-            # libusb
-            # =========================
-            ExternalProject_Add(libusb_ep
-                GIT_REPOSITORY https://github.com/libusb/libusb.git
-                GIT_TAG v1.0.27
-                UPDATE_COMMAND ""
-
-                CONFIGURE_COMMAND
-                    ${PKG_ENV}
-                    sh
-                    -l
-                    ./autogen.sh
-                    --prefix=${DEPS_PREFIX}
-                    --disable-udev
-
-                BUILD_COMMAND make -j
-                INSTALL_COMMAND make install
-                BUILD_IN_SOURCE 1
-            )
-        endif()
-
-        # =========================
-        # libplist
-        # =========================
-        ExternalProject_Add(libplist_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libplist.git
-            GIT_TAG 2117b8fdb6b4096455bd2041a63e59a028120136
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                sh
-                -l
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                ${IMD_AUTOTOOLS_ARGS}
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-        )
-
-        # =========================
-        # libimobiledevice-glue
-        # =========================
-        ExternalProject_Add(limd_glue_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice-glue.git
-            GIT_TAG 362f7848ac89b74d9dd113b38b51ecb601f76094
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                sh
-                -l
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                ${IMD_AUTOTOOLS_ARGS}
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-
-            DEPENDS libplist_ep
-        )
-
-        # =========================
-        # libusbmuxd
-        # =========================
-        ExternalProject_Add(libusbmuxd_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libusbmuxd.git
-            GIT_TAG a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                sh
-                -l
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                ${IMD_AUTOTOOLS_ARGS}
-                --without-systemd
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-
-            DEPENDS libplist_ep limd_glue_ep
-        )
-
-        # =========================
-        # libimobiledevice
-        # =========================
-
-        set(LIBIMOBILEDEVICE_DEPS
-            libplist_ep
-            libusbmuxd_ep
-            limd_glue_ep
-        )
-
-        if(NOT MINGW AND NOT MSYS)
-             list(APPEND LIBIMOBILEDEVICE_DEPS mbedtls_ep)
-        endif()
-
-        if(LINUX OR MINGW OR MSYS)
-            list(APPEND LIBIMOBILEDEVICE_DEPS libusb_ep)
-        endif()
-
-        ExternalProject_Add(libimobiledevice_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice.git
-            GIT_TAG ed0d66d0341562731bb19928dfe48155509fa7a7
-            UPDATE_COMMAND ""
-
-            PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/libimobiledevice/0001-include-windows-header.patch
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                sh
-                -l
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                ${MBEDUTILS_ARGS}
-                ${IMD_AUTOTOOLS_ARGS}
-                --disable-wireless-pairing
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-
-            DEPENDS ${LIBIMOBILEDEVICE_DEPS}
-        )
-
-        file(WRITE
-            ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
-        "
-        file(WRITE \"${CMAKE_BINARY_DIR}/libimobiledevice_ep-prefix/src/libimobiledevice_ep/tools/Makefile\" \"all:\\ninstall:\\n\")
-        ")
-
-        ExternalProject_Add_Step(libimobiledevice_ep fix_tools_makefile
-            COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
-            DEPENDEES configure
-            DEPENDERS build
-        )
-
-        # =========================
-        # libirecovery
-        # =========================
-        ExternalProject_Add(libirecovery_ep
-            GIT_REPOSITORY https://github.com/libimobiledevice/libirecovery.git
-            GIT_TAG 7ce02c347b7c26e59498e6af31c9da51018d0fa1
-            UPDATE_COMMAND ""
-
-            CONFIGURE_COMMAND
-                ${PKG_ENV}
-                sh
-                -l
-                ./autogen.sh
-                --prefix=${DEPS_PREFIX}
-                ${IMD_AUTOTOOLS_ARGS}
-
-            BUILD_COMMAND make -j
-            INSTALL_COMMAND make install
-            BUILD_IN_SOURCE 1
-
-            DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep
-        )
-
-        add_dependencies(palera1n
-            libplist_ep
-            limd_glue_ep
-            libusbmuxd_ep
-            libimobiledevice_ep
-            libirecovery_ep
-        )
-
-        if(NOT MINGW AND NOT MSYS)
-            add_dependencies(palera1n mbedtls_ep)
-        endif()
-
-        target_include_directories(palera1n PRIVATE
-            ${DEPS_PREFIX}/include
-        )
-
-        if(APPLE)
-            find_library(IOKIT IOKit)
-            find_library(COREFOUNDATION CoreFoundation)
-            find_library(SECURITY Security)
-
-            target_link_libraries(palera1n PRIVATE
-                ${IOKIT}
-                ${COREFOUNDATION}
-                ${SECURITY}
-            )
-        endif()
-
-        if(MINGW OR MSYS)
-            target_link_libraries(palera1n PRIVATE
-                imobiledevice-1.0
-                irecovery-1.0
-                usbmuxd-2.0
-                plist-2.0
-                imobiledevice-glue-1.0
-                usb-1.0
-            )
-
-            set(DLLS
-                libcrypto-3-x64.dll
-                libssl-3-x64.dll
-                libstdc++-6.dll
-                libgcc_s_seh-1.dll
-                libwinpthread-1.dll
-                libimobiledevice-1.0.dll
-                libimobiledevice-glue-1.0.dll
-                libirecovery-1.0.dll
-                libplist-2.0.dll
-                libusbmuxd-2.0.dll
-                libusb-1.0.dll
-            )
-
-            execute_process(
-                COMMAND cygpath -w "$ENV{MSYSTEM_PREFIX}/bin"
-                OUTPUT_VARIABLE MSYSTEM_PREFIX_WIN
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-
-            foreach(DLL ${DLLS})
-                add_custom_command(TARGET palera1n POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        "${MSYSTEM_PREFIX_WIN}/${DLL}"
-                        $<TARGET_FILE_DIR:palera1n>
-                )
-            endforeach()
-        else()
-            target_link_libraries(palera1n PRIVATE
-                ${DEPS_PREFIX}/lib/libimobiledevice-1.0.a
-                ${DEPS_PREFIX}/lib/libirecovery-1.0.a
-                ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
-                ${DEPS_PREFIX}/lib/libplist-2.0.a
-                ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
-                ${DEPS_PREFIX}/lib/libmbedtls.a
-                ${DEPS_PREFIX}/lib/libmbedx509.a
-                ${DEPS_PREFIX}/lib/libmbedcrypto.a
-            )
-
-            if(LINUX)
-                target_link_libraries(palera1n PRIVATE
-                    ${DEPS_PREFIX}/lib/libusb-1.0.a
-                )
-            endif()
-        endif()
     else()
-        find_package(PkgConfig REQUIRED)
-
-        pkg_check_modules(IMD REQUIRED libimobiledevice-1.0)
-        pkg_check_modules(IRECOVERY REQUIRED libirecovery-1.0)
-        pkg_check_modules(PLIST REQUIRED libplist-2.0)
-        pkg_check_modules(USBMUXD REQUIRED libusbmuxd-2.0)
-
-        target_include_directories(palera1n PRIVATE
-            ${IMD_INCLUDE_DIRS}
-            ${IRECOVERY_INCLUDE_DIRS}
-            ${PLIST_INCLUDE_DIRS}
-            ${USBMUXD_INCLUDE_DIRS}
+        set(IMD_AUTOTOOLS_ARGS
+            --enable-static
+            --disable-shared
         )
-
-        target_link_libraries(palera1n PRIVATE
-            ${IMD_LIBRARIES}
-            ${IRECOVERY_LIBRARIES}
-            ${PLIST_LIBRARIES}
-            ${USBMUXD_LIBRARIES}
-        )
-
-        target_compile_options(palera1n PRIVATE
-            ${IMD_CFLAGS_OTHER}
-            ${IRECOVERY_CFLAGS_OTHER}
-            ${PLIST_CFLAGS_OTHER}
-            ${USBMUXD_CFLAGS_OTHER}
+        set(MBEDUTILS_ARGS
+            --with-mbedtls
         )
     endif()
+
+    if(NOT MINGW AND NOT MSYS)
+    # =========================
+    # mbedTLS
+    # =========================
+    ExternalProject_Add(mbedtls_ep
+        GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
+        GIT_TAG mbedtls-3.5.2
+        UPDATE_COMMAND ""
+
+        PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/mbedtls/0001-Allow-empty-x509-cert-issuer.patch
+
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${DEPS_PREFIX}
+            -DENABLE_TESTING=OFF
+            -DENABLE_PROGRAMS=OFF
+            -DBUILD_SHARED_LIBS=OFF
+
+        INSTALL_DIR ${DEPS_PREFIX}
+    )
+    endif()
+
+    if(LINUX OR MINGW OR MSYS)
+        # =========================
+        # libusb
+        # =========================
+        ExternalProject_Add(libusb_ep
+            GIT_REPOSITORY https://github.com/libusb/libusb.git
+            GIT_TAG v1.0.27
+            UPDATE_COMMAND ""
+
+            CONFIGURE_COMMAND
+                ${PKG_ENV}
+                sh
+                -l
+                ./autogen.sh
+                --prefix=${DEPS_PREFIX}
+                --disable-udev
+
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            BUILD_IN_SOURCE 1
+        )
+    endif()
+
+    # =========================
+    # libplist
+    # =========================
+    ExternalProject_Add(libplist_ep
+        GIT_REPOSITORY https://github.com/libimobiledevice/libplist.git
+        GIT_TAG 2117b8fdb6b4096455bd2041a63e59a028120136
+        UPDATE_COMMAND ""
+
+        CONFIGURE_COMMAND
+            ${PKG_ENV}
+            sh
+            -l
+            ./autogen.sh
+            --prefix=${DEPS_PREFIX}
+            ${IMD_AUTOTOOLS_ARGS}
+
+        BUILD_COMMAND make -j
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+    )
+
+    # =========================
+    # libimobiledevice-glue
+    # =========================
+    ExternalProject_Add(limd_glue_ep
+        GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice-glue.git
+        GIT_TAG 362f7848ac89b74d9dd113b38b51ecb601f76094
+        UPDATE_COMMAND ""
+
+        CONFIGURE_COMMAND
+            ${PKG_ENV}
+            sh
+            -l
+            ./autogen.sh
+            --prefix=${DEPS_PREFIX}
+            ${IMD_AUTOTOOLS_ARGS}
+
+        BUILD_COMMAND make -j
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+
+        DEPENDS libplist_ep
+    )
+
+    # =========================
+    # libusbmuxd
+    # =========================
+    ExternalProject_Add(libusbmuxd_ep
+        GIT_REPOSITORY https://github.com/libimobiledevice/libusbmuxd.git
+        GIT_TAG a7f0543fb1ecb20ac7121c0fd77297200e0e43fc
+        UPDATE_COMMAND ""
+
+        CONFIGURE_COMMAND
+            ${PKG_ENV}
+            sh
+            -l
+            ./autogen.sh
+            --prefix=${DEPS_PREFIX}
+            ${IMD_AUTOTOOLS_ARGS}
+            --without-systemd
+
+        BUILD_COMMAND make -j
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+
+        DEPENDS libplist_ep limd_glue_ep
+    )
+
+    # =========================
+    # libimobiledevice
+    # =========================
+
+    set(LIBIMOBILEDEVICE_DEPS
+        libplist_ep
+        libusbmuxd_ep
+        limd_glue_ep
+    )
+
+    if(NOT MINGW AND NOT MSYS)
+            list(APPEND LIBIMOBILEDEVICE_DEPS mbedtls_ep)
+    endif()
+
+    if(LINUX OR MINGW OR MSYS)
+        list(APPEND LIBIMOBILEDEVICE_DEPS libusb_ep)
+    endif()
+
+    ExternalProject_Add(libimobiledevice_ep
+        GIT_REPOSITORY https://github.com/libimobiledevice/libimobiledevice.git
+        GIT_TAG ed0d66d0341562731bb19928dfe48155509fa7a7
+        UPDATE_COMMAND ""
+
+        PATCH_COMMAND patch -p1 < ${CMAKE_SOURCE_DIR}/patches/libimobiledevice/0001-include-windows-header.patch
+
+        CONFIGURE_COMMAND
+            ${PKG_ENV}
+            sh
+            -l
+            ./autogen.sh
+            --prefix=${DEPS_PREFIX}
+            ${MBEDUTILS_ARGS}
+            ${IMD_AUTOTOOLS_ARGS}
+            --disable-wireless-pairing
+
+        BUILD_COMMAND make -j
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+
+        DEPENDS ${LIBIMOBILEDEVICE_DEPS}
+    )
+
+    file(WRITE
+        ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
+    "
+    file(WRITE \"${CMAKE_BINARY_DIR}/libimobiledevice_ep-prefix/src/libimobiledevice_ep/tools/Makefile\" \"all:\\ninstall:\\n\")
+    ")
+
+    ExternalProject_Add_Step(libimobiledevice_ep fix_tools_makefile
+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/fix_tools_makefile.cmake
+        DEPENDEES configure
+        DEPENDERS build
+    )
+
+    # =========================
+    # libirecovery
+    # =========================
+    ExternalProject_Add(libirecovery_ep
+        GIT_REPOSITORY https://github.com/libimobiledevice/libirecovery.git
+        GIT_TAG 7ce02c347b7c26e59498e6af31c9da51018d0fa1
+        UPDATE_COMMAND ""
+
+        CONFIGURE_COMMAND
+            ${PKG_ENV}
+            sh
+            -l
+            ./autogen.sh
+            --prefix=${DEPS_PREFIX}
+            ${IMD_AUTOTOOLS_ARGS}
+
+        BUILD_COMMAND make -j
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+
+        DEPENDS libplist_ep libusbmuxd_ep limd_glue_ep
+    )
+
+    add_dependencies(palera1n
+        libplist_ep
+        limd_glue_ep
+        libusbmuxd_ep
+        libimobiledevice_ep
+        libirecovery_ep
+    )
+
+    if(NOT MINGW AND NOT MSYS)
+        add_dependencies(palera1n mbedtls_ep)
+    endif()
+
+    target_include_directories(palera1n PRIVATE
+        ${DEPS_PREFIX}/include
+    )
+
+    if(APPLE)
+        find_library(IOKIT IOKit)
+        find_library(COREFOUNDATION CoreFoundation)
+        find_library(SECURITY Security)
+
+        target_link_libraries(palera1n PRIVATE
+            ${IOKIT}
+            ${COREFOUNDATION}
+            ${SECURITY}
+        )
+    endif()
+
+    if(MINGW OR MSYS)
+        target_link_libraries(palera1n PRIVATE
+            imobiledevice-1.0
+            irecovery-1.0
+            usbmuxd-2.0
+            plist-2.0
+            imobiledevice-glue-1.0
+            usb-1.0
+        )
+
+        set(DLLS
+            libcrypto-3-x64.dll
+            libssl-3-x64.dll
+            libstdc++-6.dll
+            libgcc_s_seh-1.dll
+            libwinpthread-1.dll
+            libimobiledevice-1.0.dll
+            libimobiledevice-glue-1.0.dll
+            libirecovery-1.0.dll
+            libplist-2.0.dll
+            libusbmuxd-2.0.dll
+            libusb-1.0.dll
+        )
+
+        execute_process(
+            COMMAND cygpath -w "$ENV{MSYSTEM_PREFIX}/bin"
+            OUTPUT_VARIABLE MSYSTEM_PREFIX_WIN
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        foreach(DLL ${DLLS})
+            add_custom_command(TARGET palera1n POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${MSYSTEM_PREFIX_WIN}/${DLL}"
+                    $<TARGET_FILE_DIR:palera1n>
+            )
+        endforeach()
+    else()
+        target_link_libraries(palera1n PRIVATE
+            ${DEPS_PREFIX}/lib/libimobiledevice-1.0.a
+            ${DEPS_PREFIX}/lib/libirecovery-1.0.a
+            ${DEPS_PREFIX}/lib/libusbmuxd-2.0.a
+            ${DEPS_PREFIX}/lib/libplist-2.0.a
+            ${DEPS_PREFIX}/lib/libimobiledevice-glue-1.0.a
+            ${DEPS_PREFIX}/lib/libmbedtls.a
+            ${DEPS_PREFIX}/lib/libmbedx509.a
+            ${DEPS_PREFIX}/lib/libmbedcrypto.a
+        )
+
+        if(LINUX)
+            target_link_libraries(palera1n PRIVATE
+                ${DEPS_PREFIX}/lib/libusb-1.0.a
+            )
+        endif()
+    endif()
+else()
+    find_package(PkgConfig REQUIRED)
+
+    pkg_check_modules(IMD REQUIRED libimobiledevice-1.0)
+    pkg_check_modules(IRECOVERY REQUIRED libirecovery-1.0)
+    pkg_check_modules(PLIST REQUIRED libplist-2.0)
+    pkg_check_modules(USBMUXD REQUIRED libusbmuxd-2.0)
+    pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
+
+    target_include_directories(palera1n PRIVATE
+        ${IMD_INCLUDE_DIRS}
+        ${IRECOVERY_INCLUDE_DIRS}
+        ${PLIST_INCLUDE_DIRS}
+        ${USBMUXD_INCLUDE_DIRS}
+        ${LIBUSB_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(palera1n PRIVATE
+        ${IMD_LIBRARIES}
+        ${IRECOVERY_LIBRARIES}
+        ${PLIST_LIBRARIES}
+        ${USBMUXD_LIBRARIES}
+        ${LIBUSB_LIBRARIES}
+    )
+
+    target_compile_options(palera1n PRIVATE
+        ${IMD_CFLAGS_OTHER}
+        ${IRECOVERY_CFLAGS_OTHER}
+        ${PLIST_CFLAGS_OTHER}
+        ${USBMUXD_CFLAGS_OTHER}
+        ${LIBUSB_CFLAGS_OTHER}
+    )
 endif()
+

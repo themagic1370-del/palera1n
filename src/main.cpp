@@ -9,6 +9,8 @@
 # include <wx/wx.h>
 #endif
 
+#include "m8/run.hpp"
+
 #include "utils/constants.h"
 #include "utils/log.h"
 #include "utils/paleinfo.h"
@@ -18,14 +20,15 @@ void print_credits() {
         "#\n"
         "# Palera1n beta " PALERAIN_VERSION "\n"
         "#\n"
-        "# (c) 2024 Palera1n\n"
+        "# (c) 2026 Palera1n\n"
         "#\n"
         "# ========  Made by  =======\n"
         "# Made by: asdfugil, kok3shidoll, claration, mineek, staturnz\n"
         "# ======== Thanks to =======\n"
         "# Thanks to: llsc12, Nebula, Lrdsnow, nikias (libimobiledevice),\n"
-        "# checkra1n team (Siguza, axi0mx, littlelailo et al.),\n"
-        "# Procursus Team (Hayden Seay, Cameron Katri, Keto et.al)\n"
+        "# Checkra1n (Siguza, axi0mx, littlelailo et al.),\n"
+        "# Procursus (Hayden Seay, Cameron Katri, Keto et.al),\n"
+        "# kirb, ehilwyma, opa334\n"
         "# ==========================\n\n"
     );
 }
@@ -165,7 +168,13 @@ int main(int argc, char* argv[], char* envp[]) {
         wxTheApp->OnExit();
         wxEntryCleanup();
         return 0;
+    } else {
+        return checkm8(MODE_PONGOOS);
     }
+    #else
+
+    return checkm8(MODE_PONGOOS);
+
     #endif
 
     return 0;
