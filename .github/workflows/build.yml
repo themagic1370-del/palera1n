@@ -3,9 +3,9 @@ name: "Build"
 on:
   workflow_dispatch:
   push:
-      branches:
-      - koputer
-      - main
+    branches:
+    - koputer
+    - main
 
 jobs:
   build-pongo:
@@ -129,7 +129,7 @@ jobs:
           vim
           make
           patch
-      update: true
+        update: true
 
     - name: Build
       shell: msys2 {0}
